@@ -1,0 +1,38 @@
+{
+    "version": 8,
+    "configurePresets": [
+        {
+            "name": "gcc",
+            "displayName": "GCC 6.3.0 mingw32",
+            "description": "Using compilers: C = C:\\MinGW\\bin\\gcc.exe, CXX = C:\\MinGW\\bin\\g++.exe",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+                "CMAKE_C_COMPILER": "C:/MinGW/bin/gcc.exe",
+                "CMAKE_CXX_COMPILER": "C:/MinGW/bin/g++.exe",
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "gcc",
+            "description": "",
+            "displayName": "",
+            "configurePreset": "gcc"
+        },
+        {
+            "name": "cJSON.c program.c",
+            "description": "",
+            "displayName": ""
+        },
+        {
+            "name": "cJsonAndProgram",
+            "description": "",
+            "displayName": "",
+            "inherits": [
+                "cJSON.c program.c"
+            ]
+        }
+    ]
+}
