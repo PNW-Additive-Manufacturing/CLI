@@ -3,6 +3,6 @@
 #include "./CTable/table.h"
 
 int main() {
-    printf("Hello World");
+    printf("Hello World\npause\n");
     return 0;
 }
