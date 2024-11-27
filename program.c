@@ -1,75 +1,53 @@
 #include <stdio.h>
+#include <curl/curl.h>
+#include <stdlib.h>
 #include <string.h>
-#include "./cJSON/cJSON.h"
-#include "./CTable/table.h"
 
-int main() {
-const unsigned int resolution_numbers[3][2] = {
-        {1280, 720},
-        {1920, 1080},
-        {3840, 2160}
-    };
-    char *string = NULL;
-    cJSON *name = NULL;
-    cJSON *resolutions = NULL;
-    cJSON *resolution = NULL;
-    cJSON *width = NULL;
-    cJSON *height = NULL;
-    size_t index = 0;
+char* concat(const char *s1, const char *s2)
+{
+    char *result = malloc(strlen(s1) + strlen(s2) + 1);
+    strcpy(result, s1);
+    strcat(result, s2);
+    return result;
+}
 
-    cJSON *monitor = cJSON_CreateObject();
-    if (monitor == NULL)
+
+int main()
+{
+    CURL *curl;
+    CURLcode res;
+    char email[100];
+    char password[100];
+    
+    printf("Enter your email associated with pnw3d: ");
+    fgets(email, sizeof(email), stdin);
+    
+    printf("Enter your password associated with pnw3d: ");
+    fgets(password, sizeof(password), stdin);
+    
+    char* logindetails = concat(email, password);
+    
+    curl_global_init(CURL_GLOBAL_ALL);
+    
+    curl = curl_easy_init();
+    
+    if (curl)
     {
-        goto end;
-    }
-
-    name = cJSON_CreateString("Awesome 4K");
-    if (name == NULL)
-    {
-        goto end;
-    }
-    /* after creation was successful, immediately add it to the monitor,
-     * thereby transferring ownership of the pointer to it */
-    cJSON_AddItemToObject(monitor, "name", name);
-
-    resolutions = cJSON_CreateArray();
-    if (resolutions == NULL)
-    {
-        goto end;
-    }
-    cJSON_AddItemToObject(monitor, "resolutions", resolutions);
-
-    for (index = 0; index < (sizeof(resolution_numbers) / (2 * sizeof(int))); ++index)
-    {
-        resolution = cJSON_CreateObject();
-        if (resolution == NULL)
-        {
-            goto end;
+        curl_easy_setopt(curl, CURLOPT_URL, "https://pnw3d.com/api/user/login");
+        curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "{\"email\" : \"password\"}"); //INSTERT DATA INTO EMAIL/PASSWORD FIELD
+        
+        res = curl_easy_perform(curl);
+        
+        curl_easy_setopt(curl, CURLOPT_COOKIELIST, "ALL");
+        
+        if (res != CURLE_OK){
+        fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            
         }
-        cJSON_AddItemToArray(resolutions, resolution);
-
-        width = cJSON_CreateNumber(resolution_numbers[index][0]);
-        if (width == NULL)
-        {
-            goto end;
-        }
-        cJSON_AddItemToObject(resolution, "width", width);
-
-        height = cJSON_CreateNumber(resolution_numbers[index][1]);
-        if (height == NULL)
-        {
-            goto end;
-        }
-        cJSON_AddItemToObject(resolution, "height", height);
+        curl_easy_cleanup(curl);
     }
+    curl_global_cleanup();
 
-    string = cJSON_Print(monitor);
-    if (string == NULL)
-    {
-        fprintf(stderr, "Failed to print monitor.\n");
-    }
-
-end:
-    cJSON_Delete(monitor);
     return 0;
 }
