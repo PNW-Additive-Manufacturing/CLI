@@ -1,0 +1,16 @@
+{
+    "configurations": [
+        {
+            "name": "Cygwin",
+            "includePath": [
+                "${env:CYGWIN_HOME}/usr/include/curl",
+                "${env:CYGWIN_HOME}/usr/include"
+            ],
+            "defines": [],
+            "compilerPath": "${env:CYGWIN_HOME}/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}

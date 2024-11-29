@@ -2,7 +2,7 @@
 CLI in C!
 
 ## Using the Application
-
-1. To build, use the `make` command. 
-2. Copy the newly generated `libs/cJSON/build/cygcjson-1.dll` to the root directory. 
-3. Execute the compiled `program.exe` in the root directory.
+1. Using [Cygwin](https://www.cygwin.com/), install `cmake` `make` `gcc-core` `gcc-g++` `libcurl-devel` `libcurl4` `curl`.
+2. Set a system environment variable `CYGWIN_HOME` to the Cygwin installation directory.
+3. Use the `make` command to build the program. 
+4. Execute the compiled `program.exe` in the root directory.
