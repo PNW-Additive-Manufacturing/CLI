@@ -1,53 +1,91 @@
 #include <stdio.h>
-#include <curl/curl.h>
-#include <stdlib.h>
-#include <string.h>
+#include "string.h"
+#include "libs/cTable/src/table.h"
+#include "libs/cJSON/cJSON.h"
 
-char* concat(const char *s1, const char *s2)
+char* formatDetails(const char* email, const char* password)
 {
-    char *result = malloc(strlen(s1) + strlen(s2) + 1);
-    strcpy(result, s1);
-    strcat(result, s2);
-    return result;
+    char* format = "{\"email\": \"%s\", \"password\": \"%s\"}";
+    
+    // `{"email": "", "password": ""}`.length
+    char *buffer = malloc(strlen(email) + strlen(password) + strlen(format) + 1);
+    
+    sprintf(buffer, format, email, password);
+    
+    return buffer;
 }
-
 
 int main()
 {
-    CURL *curl;
-    CURLcode res;
+    // Test cJSON
+    cJSON* myJson = cJSON_Parse("{\"name\": \"Aaron Jung\"}");
+    printf("cJSON Test:\n%s\n", cJSON_Print(myJson));
+
     char email[100];
     char password[100];
     
     printf("Enter your email associated with pnw3d: ");
     fgets(email, sizeof(email), stdin);
     
+    // TODO: Fix this, we used another method to remove the newline charater.
+    email[strlen(email) - 1] = "\0";
+    
     printf("Enter your password associated with pnw3d: ");
     fgets(password, sizeof(password), stdin);
     
-    char* logindetails = concat(email, password);
+    // TODO: Fix this, we used another method to remove the newline charater.
+    password[strlen(password) - 1] = "\0";
     
-    curl_global_init(CURL_GLOBAL_ALL);
-    
-    curl = curl_easy_init();
-    
-    if (curl)
-    {
-        curl_easy_setopt(curl, CURLOPT_URL, "https://pnw3d.com/api/user/login");
-        curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "{\"email\" : \"password\"}"); //INSTERT DATA INTO EMAIL/PASSWORD FIELD
-        
-        res = curl_easy_perform(curl);
-        
-        curl_easy_setopt(curl, CURLOPT_COOKIELIST, "ALL");
-        
-        if (res != CURLE_OK){
-        fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-            
-        }
-        curl_easy_cleanup(curl);
-    }
-    curl_global_cleanup();
+    char* logindetails = formatDetails(email, password);
 
+    Table* myTable = get_empty_table();
+
+    add_cell(myTable, "Email");
+    add_cell(myTable, "Password");
+
+    next_row(myTable);
+
+    set_hline(myTable, BORDER_DOUBLE);
+
+    add_cell(myTable, email);
+    add_cell(myTable, password);
+
+    print_table(myTable);
+    
+    printf("JSON Payload: %s\n", logindetails);
+    
     return 0;
 }
+
+// int main() {
+//     printf("Hello World\n");
+
+//     Table* myTable = get_empty_table();
+
+//     set_hline(&myTable, BORDER_DOUBLE);
+
+//     add_empty_cell(myTable);
+
+//     add_cell(myTable, " This is the second cell! ");
+
+//     set_vline(myTable, 1, BORDER_SINGLE);
+
+//     add_cell(myTable, " This is the third cell! ");
+
+//     next_row(myTable);
+
+//     set_hline(myTable, BORDER_DOUBLE);
+
+//     // add_empty_cell(myTable);
+
+//     add_cell(myTable, " This is the first cell! ");
+
+//     print_table(myTable);
+
+//     free_table(myTable);
+
+//     next_row(myTable);
+
+
+//     return 0;
+// }
