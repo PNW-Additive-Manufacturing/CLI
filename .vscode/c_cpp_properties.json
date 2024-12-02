@@ -1,16 +1,18 @@
 {
-    "configurations": [
-        {
-            "name": "Cygwin",
-            "includePath": [
-                "${env:CYGWIN_HOME}/usr/include/curl",
-                "${env:CYGWIN_HOME}/usr/include"
-            ],
-            "defines": [],
-            "compilerPath": "${env:CYGWIN_HOME}/bin/gcc",
-            "cStandard": "c11",
-            "cppStandard": "c++17"
-        }
-    ],
-    "version": 4
+  "configurations": [
+    {
+      "name": "windows-gcc-x64",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "${env:CYGWIN_HOME}/usr/include/curl",
+        "${env:CYGWIN_HOME}/usr/include"
+      ],
+      "defines": [],
+      "compilerPath": "${env:CYGWIN_HOME}/bin/gcc",
+      "cStandard": "c11",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "windows-gcc-x64"
+    }
+  ],
+  "version": 4
 }
