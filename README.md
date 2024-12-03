@@ -7,7 +7,6 @@ CLI in C!
 3. Use the `make` command to build the program. 
 4. Execute one of the following commands in the root directory.
     * `cli.exe` [starts the monitor]
-    * `cli.exe login`
+    * `cli.exe login/logout`
     * `cli.exe start --machine NAME --file PATH`
     * `cli.exe stop/resume/pause --machine NAME`
-

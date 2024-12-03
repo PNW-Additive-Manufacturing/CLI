@@ -7,7 +7,8 @@
 
 #define UpdateInterval 5 // Amount of time to wait when refreshing machines in seconds.
 
-int login();
+void login();
+void logout();
 
 char* getCLIArgument(const char* argumentName, int argc, char *argv[]);
 char* requireCLIArgument(const char* argumentName, int argc, char *argv[]);
@@ -155,6 +156,10 @@ int main(int argc, char *argv[])
         {
             login();
         }
+        if (strcmp(argv[1], "logout") == 0)
+        {
+            logout();
+        }
         else if ((strcmp(argv[1], "pause")==0) || (strcmp(argv[1], "resume")==0) || (strcmp(argv[1], "stop")==0))
         {
             char* machine = requireCLIArgument("machine", argc, argv);
@@ -236,7 +241,7 @@ int main(int argc, char *argv[])
         {
 usage: 
             printf("Usage:\tcli.exe\t[starts the monitor]\n");
-            printf("OR\tcli.exe login\n");
+            printf("OR\tcli.exe login/logout\n");
             printf("OR\tcli.exe start --machine NAME --file PATH\n");
             printf("OR\tcli.exe stop/resume/pause --machine NAME\n");
             exit(1);
@@ -268,7 +273,7 @@ void storeAccessToken(char* accessToken)
     fclose(accessTokenFile);
 }
 
-int login()
+void login()
 {
     while (true)
     {
@@ -300,6 +305,12 @@ int login()
             break;
         }
     }
+}
+
+void logout()
+{
+    remove(".accessToken");
+    printf("\nYou have been successfully logged out!\n");
 }
 
 int upload(char* stlPath, struct Machine* machines, int machineCount)
