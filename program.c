@@ -204,7 +204,10 @@ int main(int argc, char *argv[])
         else
         {
 usage: 
-            printf("Usage:\tci.exe\nOR\tci.exe login\nOR\tci.exe upload --file PATH\n\tci.exe control stop/resume/pause --machine NAME\n");
+            printf("Usage:\tcli.exe\n");
+            printf("OR\tcli.exe login\n");
+            printf("OR\tcli.exe start --machine NAME --file PATH\n");
+            printf("OR\tcli.exe stop/resume/pause --machine NAME\n");
             exit(1);
         }
     }
