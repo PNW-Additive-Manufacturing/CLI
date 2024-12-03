@@ -163,17 +163,6 @@ int main(int argc, char *argv[])
             exit(1);
             // upload(stlPath, machines, 3);
         }
-        else if (strcmp(argv[1], "pause") == 0)
-        {
-            //printf("The program has been paused, to resume the program enter the resume command.");
-            //pause ();
-            puts("Please press the enter key in order to continue.");
-            while (getChar()!= 27);
-        }
-        else if (strcmp(argv[1], "stop") == 0)
-        {
-            exit(1);
-        }
         else if (strcmp(argv[1], "control") == 0)
         {
             char* machine = requireCLIArgument("machine", argc, argv);
