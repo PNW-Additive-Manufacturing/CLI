@@ -163,6 +163,18 @@ int main(int argc, char *argv[])
             exit(1);
             // upload(stlPath, machines, 3);
         }
+        else if (strcmp(argv[1], "pause") == 0)
+        {
+            //TODO: ADD LOGIC
+        }
+        else if (strcmp(argv[1], "resume") == 0)
+        {
+            //TODO: ADD LOGIC
+        }
+        else if (strcmp(argv[1], "stop") == 0)
+        {
+            //TODO: ADD LOGIC
+        }
         else if (strcmp(argv[1], "control") == 0)
         {
             char* machine = requireCLIArgument("machine", argc, argv);
