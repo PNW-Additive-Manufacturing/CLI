@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
         else
         {
 usage: 
-            printf("Usage:\tcli.exe\n");
+            printf("Usage:\tcli.exe\t[starts the monitor]\n");
             printf("OR\tcli.exe login\n");
             printf("OR\tcli.exe start --machine NAME --file PATH\n");
             printf("OR\tcli.exe stop/resume/pause --machine NAME\n");
