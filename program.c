@@ -155,18 +155,49 @@ int main(int argc, char *argv[])
         {
             login();
         }
-        else if (strcmp(argv[1], "pause") == 0)
+        else if ((strcmp(argv[1], "pause")==0) || (strcmp(argv[1], "resume")==0) || (strcmp(argv[1], "stop")==0))
         {
-            //printf("The program has been paused, to resume the program enter the resume command.");
-            //pause ();
-            puts("Please press the enter key in order to continue.");
-            // while (getChar()!= 27);
+            char* machine = requireCLIArgument("machine", argc, argv);
+
+            if (argc < 2)
+            {
+                goto usage;
+            }
+
+            // Read the stored access token.
+            char* accessToken = readAccessToken();
+
+            int control_result = control_machine(machine, argv[2], accessToken, NULL);
+
+            if (control_result)
+            {
+                printf("\n\x1B[38;5;2m✓ Command has been sent to %s!\033[m\n\n", machine, argv[2]);
+            }
+            else
+            {
+                printf("\n\x1B[38;5;1mAn issue occurred commanding %s!\033[m\n\n", machine);
+            }
+            free(accessToken);
         }
-        else if (strcmp(argv[1], "stop") == 0)
+        else if (strcmp(argv[1], "start") == 0)
         {
-            exit(1);
+            char* fileToUse = requireCLIArgument("file", argc, argv);
+            char* machine = requireCLIArgument("machine", argc, argv);
+            char* accessToken = readAccessToken();
+
+            int control_result = control_machine(machine, argv[2], accessToken, fileToUse);
+
+            if (control_result)
+            {
+                printf("\n\x1B[38;5;2m✓ Printing %s on %s!\033[m\n\n", fileToUse, machine);
+            }
+            else
+            {
+                printf("\n\x1B[38;5;1mAn issue occurred commanding %s!\033[m\n\n", machine);
+            }
+            free(accessToken);
         }
-        else if (strcmp(argv[1], "control") == 0)
+        /*else if (strcmp(argv[1], "control") == 0)
         {
             char* machine = requireCLIArgument("machine", argc, argv);
 
@@ -200,7 +231,7 @@ int main(int argc, char *argv[])
                 printf("\n\x1B[38;5;1mAn issue occurred commanding %s!\033[m\n\n", machine);
             }
             free(accessToken);
-        }
+        }*/
         else
         {
 usage: 
