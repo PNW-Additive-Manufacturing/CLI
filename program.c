@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "string.h"
+#include <unistd.h> 
+#include <string.h>
 #include "libs/cTable/src/table.h"
-#include "ams.c"
+#include "ams.h"
+
+#define UpdateInterval 5 // Amount of time to wait when refreshing machines in seconds.
 
 int login();
 int upload(char* stlPath, struct Machine* machines, int machineCount);
@@ -10,16 +13,143 @@ int upload(char* stlPath, struct Machine* machines, int machineCount);
 char* getCLIArgument(const char* argumentName, int argc, char *argv[]);
 char* requireCLIArgument(const char* argumentName, int argc, char *argv[]);
 
-char* formatDetails(const char* email, const char* password);
+char* readAccessToken()
+{
+    FILE* accessTokenFile = fopen(".accessToken", "r");
+    if (accessTokenFile == NULL)
+    {
+        fprintf(stderr, "You are not logged in!\n");
+        exit(1);
+    }
+
+    fseek(accessTokenFile, 0, SEEK_END);
+    long fileSize = ftell(accessTokenFile); // Cursor position
+    fseek(accessTokenFile, 0, SEEK_SET); 
+
+    char* accessToken = (char *)malloc((fileSize + 1) * sizeof(char)); 
+
+    size_t bytesRead = fread(accessToken, sizeof(char), fileSize, accessTokenFile);
+    accessToken[bytesRead] = '\0';
+
+    fclose(accessTokenFile);
+
+    return accessToken;
+}
+
+void display_machines(const char* accessToken) {
+    int machineQuantity = 0;
+    struct Machine* machines = NULL;
+
+    // We need to store the previous result in case something goes wrong fetching the new interval.
+    struct Machine* previousMachines = NULL;
+    int previousMachineQuantity = 0;
+
+    int isLastFetchSuccessful = false;
+
+    while (1) {
+        machines = fetch_machines(&machineQuantity, accessToken);
+
+        isLastFetchSuccessful = machineQuantity != 0;
+
+        // Use previous results if fetching machines fails
+        if (machineQuantity == 0) {
+            fprintf(stderr, "\x1B[38;5;1mError: Unable to contact the server. Displaying previous results.\033[m\n");
+            machines = previousMachines;
+            machineQuantity = previousMachineQuantity;
+        } else {
+            // Free previous results and update them
+            if (previousMachines != NULL) {
+                free(previousMachines);
+            }
+            previousMachines = machines;
+            previousMachineQuantity = machineQuantity;
+        }
+
+        // Create the table
+        Table* myTable = get_empty_table();
+
+        set_hline(myTable, BORDER_SINGLE);
+
+        add_cell(myTable, " Machine Name ");
+        add_cell(myTable, " Status ");
+        add_cell(myTable, " Filename ");
+        add_cell(myTable, " Progress ");
+
+        next_row(myTable);
+
+        // Style the ctable
+        set_hline(myTable, BORDER_SINGLE);
+        set_vline(myTable, 0, BORDER_SINGLE);
+        set_vline(myTable, 1, BORDER_SINGLE);
+        set_vline(myTable, 2, BORDER_SINGLE);
+        set_vline(myTable, 4, BORDER_SINGLE);
+
+        // Populate table with machine data
+        for (int i = 0; i < machineQuantity; i++) {
+            add_cell_fmt(myTable, " %s (%s) ", machines[i].name, machines[i].model);
+
+            int isBusy = strcmp(machines[i].status, "Printing") == 0 || strcmp(machines[i].status, "Preparing") == 0;
+            int isDoneOrUnfinished = strcmp(machines[i].status, "Printed") == 0 || strcmp(machines[i].status, "Error") == 0;
+
+            // Use colors for status
+            if (strcmp(machines[i].status, "Printed") == 0) {
+                add_cell_fmt(myTable, "\x1B[38;5;2m %s \033[m", machines[i].status);
+            } 
+            else if (isBusy) {
+                add_cell_fmt(myTable, "\x1B[38;5;4m %s \033[m", machines[i].status);
+            }
+            else if (strcmp(machines[i].status, "Error") == 0) {
+                add_cell_fmt(myTable, "\x1B[38;5;1m %s \033[m", machines[i].status);
+            } 
+            else 
+            {
+                add_cell_fmt(myTable, " %s ", machines[i].status);
+            }
+
+            if (machines[i].filename != NULL && (isBusy || isDoneOrUnfinished || strcmp(machines[i].status, "Paused") == 0)) {
+                add_cell_fmt(myTable, " %s ", machines[i].filename);
+
+                override_horizontal_alignment(myTable, H_ALIGN_RIGHT);
+                add_cell_fmt(myTable, " %d%% ", machines[i].progress);
+            } else {
+                add_empty_cell(myTable);
+                add_empty_cell(myTable);
+            }
+
+            set_hline(myTable, BORDER_SINGLE);
+            
+            next_row(myTable);
+        }
+        set_hline(myTable, BORDER_SINGLE);
+
+        // This clears the terminal using ANSI characters.
+        printf("\033[H\033[J");
+        print_table(myTable);
+
+        if (!isLastFetchSuccessful)
+        {
+            fprintf(stderr, "\x1B[38;5;1mUnable to connect to AMS. Retrying...\033[m\n");
+        }
+        else
+        {
+            printf("Connected to AMS! Listening for changes...\n");
+        }
+
+        // Free the table
+        free_table(myTable);
+
+        sleep(UpdateInterval);
+    }
+
+    // Free resources before exiting
+    if (previousMachines != NULL) {
+        free(previousMachines);
+    }
+    free(machines);
+}
 
 int main(int argc, char *argv[])
 {
-    // Place-holder values. Will need to use malloc when fetching.
-    struct Machine machines[3];
-    machines[0] = make_machine("Sam (A1)", "Printing", "Spotify Car Thing Mount");
-    machines[1] = make_machine("Cinder Block (X1C)", "Printing", "IEEE Tags");
-    machines[2] = make_machine("Ripley (X1E)", "Idle", NULL);
-
     if (argc > 1)
     {
         if (strcmp(argv[1], "login") == 0)
@@ -30,78 +160,96 @@ int main(int argc, char *argv[])
         {
             char* stlPath = requireCLIArgument("file", argc, argv);
 
-            upload(stlPath, machines, 3);
+            exit(1);
+            // upload(stlPath, machines, 3);
+        }
+        else if (strcmp(argv[1], "control") == 0)
+        {
+            char* machine = requireCLIArgument("machine", argc, argv);
+
+            if (argc < 2)
+            {
+                goto usage;
+            }
+
+            // Read the stored access token.
+            char* accessToken = readAccessToken();
+
+            if (control_machine(machine, argv[2], accessToken))
+            {
+                printf("\n\x1B[38;5;2m✓ Command has been sent to %s!\033[m\n", machine, argv[2]);
+            }
+            else
+            {
+                printf("\n\x1B[38;5;1mAn issue occurred commanding %s!\033[m\n", machine);
+            }
+            free(accessToken);
         }
         else
         {
-            printf("Usage:\tci.exe\nOR\tci.exe login\nOR\tci.exe upload --file PATH\n");
+usage: 
+            printf("Usage:\tci.exe\nOR\tci.exe login\nOR\tci.exe upload --file PATH\n\tci.exe control stop/resume/pause --machine NAME\n");
             exit(1);
         }
     }
     else
     {
-        // Printer Monitor
-        printf("Logged in as Aaron Jung\n\n");
+        // Read the stored access token.
+        char* accessToken = readAccessToken();
 
-        // Place holder values
-        Table* myTable = get_empty_table();
+        display_machines(accessToken);        
 
-        set_hline(myTable, BORDER_SINGLE);
-
-        add_cell(myTable, " Name ");
-        add_cell(myTable, " Status ");
-        add_cell(myTable, " Filename ");
-
-        next_row(myTable);
-
-        set_hline(myTable, BORDER_SINGLE);
-
-        set_vline(myTable, 0, BORDER_SINGLE);
-        set_vline(myTable, 1, BORDER_SINGLE);
-        set_vline(myTable, 2, BORDER_SINGLE);
-
-        // Values
-        for (int i = 0; i < 3; i++)
-        {
-            add_cell_fmt(myTable, " %s ", machines[i].name);
-            add_cell_fmt(myTable, " %s ", machines[i].status);
-
-            if (machines[i].filename != NULL)
-            {
-                add_cell_fmt(myTable, " %s ", machines[i].filename);
-            }
-            else add_empty_cell(myTable);
-
-            set_hline(myTable, BORDER_SINGLE);
-            next_row(myTable);
-        }
-
-        make_boxed(myTable, BORDER_SINGLE);
-
-        print_table(myTable);
     }
 
     return 0;
 }
 
+void storeAccessToken(char* accessToken)
+{
+    FILE* accessTokenFile = fopen(".accessToken", "w+");
+    if (accessTokenFile == NULL)
+    {
+        fprintf(stderr, "Failed to interact with the .accessToken file. Is anything else handling it?\n");
+        exit(1);
+    }
+    
+    fwrite(accessToken, sizeof(char), strlen(accessToken), accessTokenFile);
+
+    fclose(accessTokenFile);
+}
+
 int login()
 {
-    char email[100];
-    char password[100];
-    
-    printf("Enter your email associated with pnw3d: ");
-    fgets(email, sizeof(email), stdin);
-    
-    // TODO: Fix this, we used another method to remove the newline charater.
-    email[strlen(email) - 1] = "\0";
-    
-    printf("Enter your password associated with pnw3d: ");
-    fgets(password, sizeof(password), stdin);
-    
-    // TODO: Fix this, we used another method to remove the newline charater.
-    password[strlen(password) - 1] = "\0";
-    
-    char* logindetails = formatDetails(email, password);
+    while (true)
+    {
+        char email[100];
+        char password[100];
+        
+        printf("\nEnter your PNW3D Email: ");
+        fgets(email, sizeof(email), stdin);
+        
+        email[strcspn(email, "\r\n")] = 0;
+        
+        printf("Enter your PNW3D Password: ");
+        fgets(password, sizeof(password), stdin);
+        
+        password[strcspn(password, "\r\n")] = 0;
+        
+        // The user has given us their email and password, send it to the AMS to get a session/access token so we can pull machine data!
+        char* token = ams_login(email, password);
+        if (token == NULL)
+        {
+            fprintf(stderr, "\nPassword or email is incorrect! Try again...\n");
+        }
+        else
+        {
+            // We got a session-token. Store it an close the program!
+            storeAccessToken(token);
+
+            printf("\nYou have been successfully logged in!\n");
+            break;
+        }
+    }
 }
 
 int upload(char* stlPath, struct Machine* machines, int machineCount)
@@ -141,18 +289,6 @@ int upload(char* stlPath, struct Machine* machines, int machineCount)
     printf("Sending part to %s\n", machineName);
 
     fclose(file);
-}
-
-char* formatDetails(const char* email, const char* password)
-{
-    char* format = "{\"email\": \"%s\", \"password\": \"%s\"}";
-    
-    // `{"email": "", "password": ""}`.length
-    char *buffer = malloc(strlen(email) + strlen(password) + strlen(format) + 1);
-    
-    sprintf(buffer, format, email, password);
-    
-    return buffer;
 }
 
 /**
