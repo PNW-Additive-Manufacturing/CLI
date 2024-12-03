@@ -156,13 +156,6 @@ int main(int argc, char *argv[])
         {
             login();
         }
-        else if (strcmp(argv[1], "upload") == 0)
-        {
-            char* stlPath = requireCLIArgument("file", argc, argv);
-
-            exit(1);
-            // upload(stlPath, machines, 3);
-        }
         else if (strcmp(argv[1], "pause") == 0)
         {
             //printf("The program has been paused, to resume the program enter the resume command.");
