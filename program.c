@@ -165,15 +165,14 @@ int main(int argc, char *argv[])
         }
         else if (strcmp(argv[1], "pause") == 0)
         {
-            //TODO: ADD LOGIC
-        }
-        else if (strcmp(argv[1], "resume") == 0)
-        {
-            //TODO: ADD LOGIC
+            //printf("The program has been paused, to resume the program enter the resume command.");
+            //pause ();
+            puts("Please press the enter key in order to continue.");
+            while (getChar()!= 27);
         }
         else if (strcmp(argv[1], "stop") == 0)
         {
-            //TODO: ADD LOGIC
+            exit(1);
         }
         else if (strcmp(argv[1], "control") == 0)
         {
