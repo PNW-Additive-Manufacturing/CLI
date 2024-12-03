@@ -31,6 +31,6 @@ struct Machine* fetch_machines(int* quantity, const char* token_value);
 #define MACHINE_ACTION_RESUME "resume"
 #define MACHINE_ACTION_PAUSE "pause"
 
-int control_machine(char* identifier, char* action, char* token);
+int control_machine(char* identifier, char* action, const char* token, char* fileToUse);
 
 #endif

@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
             //printf("The program has been paused, to resume the program enter the resume command.");
             //pause ();
             puts("Please press the enter key in order to continue.");
-            while (getChar()!= 27);
+            // while (getChar()!= 27);
         }
         else if (strcmp(argv[1], "stop") == 0)
         {
@@ -186,13 +186,26 @@ int main(int argc, char *argv[])
             // Read the stored access token.
             char* accessToken = readAccessToken();
 
-            if (control_machine(machine, argv[2], accessToken))
+
+            int control_result;
+            if (strcmp(argv[2], "start") == 0)
             {
-                printf("\n\x1B[38;5;2m✓ Command has been sent to %s!\033[m\n", machine, argv[2]);
+                char* fileToUse = requireCLIArgument("file", argc, argv);
+
+                control_result = control_machine(machine, argv[2], accessToken, fileToUse);
             }
             else
             {
-                printf("\n\x1B[38;5;1mAn issue occurred commanding %s!\033[m\n", machine);
+                control_result = control_machine(machine, argv[2], accessToken, NULL);
+            }
+
+            if (control_result)
+            {
+                printf("\n\x1B[38;5;2m✓ Command has been sent to %s!\033[m\n\n", machine, argv[2]);
+            }
+            else
+            {
+                printf("\n\x1B[38;5;1mAn issue occurred commanding %s!\033[m\n\n", machine);
             }
             free(accessToken);
         }

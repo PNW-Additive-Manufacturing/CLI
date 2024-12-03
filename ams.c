@@ -107,11 +107,24 @@ static size_t noop_write_callback(void* ptr, size_t size, size_t nmemb, void* us
 #define MACHINE_ACTION_PAUSE "pause"
 
 // I will add the success check later and make more functions.... later...... not today.... It is very late.
-int control_machine(char* identifier, char* action, const char* token)
+int control_machine(char* identifier, char* action, const char* token, char* fileToUse)
 {
-    char* format = "https://pnw3d.com/api/farm/control?identifier=%s&action=%s";
-    char* url = malloc((strlen(format) + strlen(identifier) + strlen(action) + 1) * sizeof(char));
-    sprintf(url, format, identifier, action);
+    char* url;
+
+    if (strcmp(action, "start") == 0)
+    {
+        if (fileToUse == NULL) return NULL;
+
+        char* format = "https://pnw3d.com/api/farm/control?identifier=%s&action=%s&fileToPrint=%s";
+        url = malloc((strlen(format) + strlen(identifier) + strlen(action) + strlen(fileToUse) + 1) * sizeof(char));
+        sprintf(url, format, identifier, action, fileToUse);
+    }
+    else 
+    {
+        char* format = "https://pnw3d.com/api/farm/control?identifier=%s&action=%s";
+        url = malloc((strlen(format) + strlen(identifier) + strlen(action) + 1) * sizeof(char));
+        sprintf(url, format, identifier, action);
+    }
 
     CURL* curl = curl_easy_init();
     if (!curl) {
