@@ -8,7 +8,6 @@
 #define UpdateInterval 5 // Amount of time to wait when refreshing machines in seconds.
 
 int login();
-int upload(char* stlPath, struct Machine* machines, int machineCount);
 
 char* getCLIArgument(const char* argumentName, int argc, char *argv[]);
 char* requireCLIArgument(const char* argumentName, int argc, char *argv[]);
