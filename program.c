@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
             // Read the stored access token.
             char* accessToken = readAccessToken();
 
-            int control_result = control_machine(machine, argv[2], accessToken, NULL);
+            int control_result = control_machine(machine, argv[1], accessToken, NULL);
 
             if (control_result)
             {
@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
             char* machine = requireCLIArgument("machine", argc, argv);
             char* accessToken = readAccessToken();
 
-            int control_result = control_machine(machine, argv[2], accessToken, fileToUse);
+            int control_result = control_machine(machine, argv[1], accessToken, fileToUse);
 
             if (control_result)
             {

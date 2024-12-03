@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "curl/curl.h"
+#include <curl/curl.h>
 #include "libs/cJSON/cJSON.h"
 
 #define PNW3DUrl "https://pnw3d.com"
@@ -126,6 +126,7 @@ int control_machine(char* identifier, char* action, const char* token, char* fil
         sprintf(url, format, identifier, action);
     }
 
+
     CURL* curl = curl_easy_init();
     if (!curl) {
         fprintf(stderr, "Failed to initialize CURL!\n");
@@ -133,20 +134,25 @@ int control_machine(char* identifier, char* action, const char* token, char* fil
         return NULL;
     }
 
+    // char* encoded_curl = curl_easy_escape(curl, url, 0);
+
     char* cookies = curl_format_cookie("session-token", token);
     if (cookies == NULL) {
         curl_easy_cleanup(curl);
         free(url);
         return NULL;
     }
+
+    printf("URL: %s\n", url);
     
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_COOKIELIST, "ALL");
     curl_easy_setopt(curl, CURLOPT_COOKIE, cookies);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, noop_write_callback);
+    // curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, noop_write_callback);
 
     CURLcode res = curl_easy_perform(curl);
+
     curl_easy_cleanup(curl);
 
     return res == CURLE_OK;
