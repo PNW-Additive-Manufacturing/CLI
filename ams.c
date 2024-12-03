@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "curl/curl.h"
+#include <curl/curl.h>
 #include "libs/cJSON/cJSON.h"
 
 #define PNW3DUrl "https://pnw3d.com"
@@ -139,14 +139,17 @@ int control_machine(char* identifier, char* action, const char* token, char* fil
         free(url);
         return NULL;
     }
+
+    printf("URL: %s\n", url);
     
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_COOKIELIST, "ALL");
     curl_easy_setopt(curl, CURLOPT_COOKIE, cookies);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, noop_write_callback);
+    // curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, noop_write_callback);
 
     CURLcode res = curl_easy_perform(curl);
+
     curl_easy_cleanup(curl);
 
     return res == CURLE_OK;
