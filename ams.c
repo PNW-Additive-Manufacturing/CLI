@@ -3,6 +3,7 @@
 #include <string.h>
 #include <curl/curl.h>
 #include "libs/cJSON/cJSON.h"
+#include "ams.h"
 
 #define PNW3DUrl "https://pnw3d.com"
 
@@ -10,6 +11,16 @@ struct CurlUserData {
     char* content;
     size_t size;
 };
+
+struct CurlUserData make_empty_user_data()
+{
+    struct CurlUserData resData = { .content = malloc(1), .size = 0 };
+    if (resData.content == NULL) {
+        fprintf(stderr, "Failed to allocate initial memory for CurlUserData!\n");
+        exit(1);
+    }
+    return resData;
+}
 
 size_t curl_user_write_callback(char* buffer, size_t size, size_t nitems, void* userdata) {
     size_t total_bytes = size * nitems;
@@ -50,18 +61,8 @@ char* curl_format_cookie(const char* name, const char* value) {
     return cookie;
 }
 
-/**
- * Represents a limited version of a 3D Printer / machines state from the AMS API.  
- */
-struct Machine {
-    char* name;
-    char* status;
-    char* filename;
-    char* model;
-    unsigned int progress;
-};
 
-struct Machine make_machine(const char *identifier, const char* model, const char *status, const char *filename, unsigned int progress) {
+struct Machine make_machine(const char *identifier, const char* model, const char *status, const char *filename, unsigned int progress, unsigned int features) {
     struct Machine machine;
 
     // We want Machine to own its references.
@@ -70,6 +71,7 @@ struct Machine make_machine(const char *identifier, const char* model, const cha
     machine.filename = filename ? strdup(filename) : NULL;
     machine.progress = progress;
     machine.model = strdup(model);
+    machine.features = features;
 
     return machine;
 }
@@ -84,7 +86,8 @@ struct Machine cJSON_Parse_Machine(cJSON* node) {
         cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(node, "model")),
         cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(node, "status")),
         cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(node, "filename")),
-        (unsigned int)cJSON_GetNumberValue(cJSON_GetObjectItemCaseSensitive(node, "progress"))
+        (unsigned int)cJSON_GetNumberValue(cJSON_GetObjectItemCaseSensitive(node, "progress")),
+        (unsigned int)cJSON_GetNumberValue(cJSON_GetObjectItemCaseSensitive(node, "features"))
     );
 }
 
@@ -107,12 +110,17 @@ static size_t noop_write_callback(void* ptr, size_t size, size_t nmemb, void* us
 #define MACHINE_ACTION_RESUME "resume"
 #define MACHINE_ACTION_PAUSE "pause"
 
-int control_machine(char* identifier, char* action, const char* token, char* fileToUse)
+/**
+ * Start, stop, pause, resume a specific machine.
+ * @param action Start, stop, pause, or resume.
+ * 
+ */
+int control_machine(char* identifier, char* action, char* fileToUse, const char* token)
 {
     CURL* curl = curl_easy_init();
     if (!curl) {
         fprintf(stderr, "Failed to initialize CURL!\n");
-        return NULL;
+        return 0;
     }
 
     char* encoded_identifier = curl_easy_escape(curl, identifier, 0);
@@ -122,7 +130,7 @@ int control_machine(char* identifier, char* action, const char* token, char* fil
     if (strcmp(action, "start") == 0)
     {
         char* encoded_fileToUse = curl_easy_escape(curl, fileToUse, 0);
-        if (encoded_fileToUse == NULL) return NULL;
+        if (encoded_fileToUse == NULL) return 0;
 
         char* format = "https://pnw3d.com/api/farm/control?identifier=%s&action=%s&fileToPrint=%s";
         url = malloc((strlen(format) + strlen(encoded_identifier) + strlen(action) + strlen(encoded_fileToUse) + 1) * sizeof(char));
@@ -141,23 +149,38 @@ int control_machine(char* identifier, char* action, const char* token, char* fil
         free(encoded_identifier);
         // free(encoded_fileToUse);
         free(url);
-        return NULL;
+        return 0;
     }
 
-    // printf("URL: %s\n", url);
+    struct CurlUserData resData = make_empty_user_data();
     
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_COOKIELIST, "ALL");
     curl_easy_setopt(curl, CURLOPT_COOKIE, cookies);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    // curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, noop_write_callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resData);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_user_write_callback);
 
     CURLcode res = curl_easy_perform(curl);
-
-    free(encoded_identifier);
-    // free(encoded_fileToUse);
     curl_easy_cleanup(curl);
+    free(encoded_identifier);
 
+    cJSON* resDataJSON = parse_user_data_as_json(&resData);
+    if (resDataJSON == NULL)
+    {
+        fprintf(stderr, "Failed to parse API response JSON: %s\n", resData.content);
+        return 0;
+    }
+    free(resData.content);
+
+    // printf("Data: %s\n", cJSON_Print(resDataJSON));
+    if (cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(resDataJSON, "success")) == 0)
+    {
+        fprintf(stderr, "%s\n", cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(resDataJSON, "errorMessage")));
+        return 0;
+    }
+
+    // free(encoded_fileToUse);
     return res == CURLE_OK;
 }
 
@@ -190,11 +213,7 @@ char* ams_login(char* email, char* password)
         return NULL;
     }
 
-    struct CurlUserData resData = { .content = malloc(1), .size = 0 };
-    if (resData.content == NULL) {
-        fprintf(stderr, "Failed to allocate initial memory for response data!\n");
-        return NULL;
-    }
+    struct CurlUserData resData = make_empty_user_data();
 
     curl_easy_setopt(curl, CURLOPT_URL, "https://pnw3d.com/api/login");
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, buffer);
@@ -210,12 +229,11 @@ char* ams_login(char* email, char* password)
     cJSON* resDataJSON = parse_user_data_as_json(&resData);
     if (resDataJSON == NULL)
     {
-        fprintf(stderr, "Failed to parse response JSON: %s\n", resData.content);
+        fprintf(stderr, "Failed to parse API response JSON: %s\n", resData.content);
         return NULL;
     }
     free(resData.content);
 
-    // printf("Data: %s\n", cJSON_Print(resDataJSON));
     if (cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(resDataJSON, "success")) == 0)
     {
         fprintf(stderr, "API response from AMS was marked as unsuccessful!\n");
@@ -287,7 +305,7 @@ struct Machine* fetch_machines(int* quantity, const char* token_value) {
     // printf("Data: %s\n", cJSON_Print(resDataJSON));
     if (cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(resDataJSON, "success")) == 0)
     {
-        fprintf(stderr, "API response from AMS was marked as unsuccessful!\n");
+        fprintf(stderr, "%s\n", cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(resDataJSON, "errorMessage")));
         return NULL;
     }
 

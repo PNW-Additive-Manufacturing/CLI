@@ -1,7 +1,8 @@
 CURRENT_DIR := $(CURDIR)
+OUTPUT := cli.exe
 
 output: cJSON cTable program.o access.o ams.o
-	gcc program.o access.o ams.o libs/cTable/bin/src/table.c.o libs/cTable/bin/src/vector.c.o libs/cTable/bin/src/string_util.c.o libs/cTable/bin/src/string_builder.c.o libs/cJSON/build/cygcjson-1.dll -lcurl -o cli.exe
+	gcc program.o access.o ams.o libs/cTable/bin/src/table.c.o libs/cTable/bin/src/vector.c.o libs/cTable/bin/src/string_util.c.o libs/cTable/bin/src/string_builder.c.o libs/cJSON/build/cygcjson-1.dll -lcurl -o $(OUTPUT)
 
 program.o: program.c
 	gcc -c program.c
