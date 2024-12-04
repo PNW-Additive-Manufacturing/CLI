@@ -11,7 +11,6 @@
 char* getCLIArgument(const char* argumentName, int argc, char *argv[]);
 char* requireCLIArgument(const char* argumentName, int argc, char *argv[]);
 
-
 void display_machines(const char* accessToken)
 {
     int machineQuantity = 0;
@@ -76,7 +75,7 @@ void display_machines(const char* accessToken)
                 add_cell_fmt(myTable, "\x1B[38;5;4m %s \033[m", machines[i].status);
             }
             else if (strcmp(machines[i].status, "Error") == 0) {
-                add_cell_fmt(myTable, "\x1B[38;5;1m %s \033[m", machines[i].status);
+                add_cell_fmt(myTable, "\x1B[38;5;1m %s \033[m", "Cancelled");
             } 
             else 
             {
@@ -180,41 +179,6 @@ int main(int argc, char *argv[])
             }
             free(accessToken);
         }
-        /*else if (strcmp(argv[1], "control") == 0)
-        {
-            char* machine = requireCLIArgument("machine", argc, argv);
-
-            if (argc < 2)
-            {
-                goto usage;
-            }
-
-            // Read the stored access token.
-            char* accessToken = readAccessToken();
-
-
-            int control_result;
-            if (strcmp(argv[2], "start") == 0)
-            {
-                char* fileToUse = requireCLIArgument("file", argc, argv);
-
-                control_result = control_machine(machine, argv[2], accessToken, fileToUse);
-            }
-            else
-            {
-                control_result = control_machine(machine, argv[2], accessToken, NULL);
-            }
-
-            if (control_result)
-            {
-                printf("\n\x1B[38;5;2m✓ Command has been sent to %s!\033[m\n\n", machine, argv[2]);
-            }
-            else
-            {
-                printf("\n\x1B[38;5;1mAn issue occurred commanding %s!\033[m\n\n", machine);
-            }
-            free(accessToken);
-        }*/
         else
         {
 usage: 
