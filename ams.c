@@ -78,6 +78,7 @@ struct Machine make_machine(const char *identifier, const char* model, const cha
  * Parses a Machine using a cJSON object.
  */
 struct Machine cJSON_Parse_Machine(cJSON* node) {
+
     return make_machine(
         cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(node, "identifier")),
         cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(node, "model")),
@@ -106,44 +107,44 @@ static size_t noop_write_callback(void* ptr, size_t size, size_t nmemb, void* us
 #define MACHINE_ACTION_RESUME "resume"
 #define MACHINE_ACTION_PAUSE "pause"
 
-// I will add the success check later and make more functions.... later...... not today.... It is very late.
 int control_machine(char* identifier, char* action, const char* token, char* fileToUse)
 {
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        fprintf(stderr, "Failed to initialize CURL!\n");
+        return NULL;
+    }
+
+    char* encoded_identifier = curl_easy_escape(curl, identifier, 0);
+
     char* url;
 
     if (strcmp(action, "start") == 0)
     {
-        if (fileToUse == NULL) return NULL;
+        char* encoded_fileToUse = curl_easy_escape(curl, fileToUse, 0);
+        if (encoded_fileToUse == NULL) return NULL;
 
         char* format = "https://pnw3d.com/api/farm/control?identifier=%s&action=%s&fileToPrint=%s";
-        url = malloc((strlen(format) + strlen(identifier) + strlen(action) + strlen(fileToUse) + 1) * sizeof(char));
-        sprintf(url, format, identifier, action, fileToUse);
+        url = malloc((strlen(format) + strlen(encoded_identifier) + strlen(action) + strlen(encoded_fileToUse) + 1) * sizeof(char));
+        sprintf(url, format, encoded_identifier, action, encoded_fileToUse);
     }
     else 
     {
         char* format = "https://pnw3d.com/api/farm/control?identifier=%s&action=%s";
-        url = malloc((strlen(format) + strlen(identifier) + strlen(action) + 1) * sizeof(char));
-        sprintf(url, format, identifier, action);
+        url = malloc((strlen(format) + strlen(encoded_identifier) + strlen(action) + 1) * sizeof(char));
+        sprintf(url, format, encoded_identifier, action);
     }
-
-
-    CURL* curl = curl_easy_init();
-    if (!curl) {
-        fprintf(stderr, "Failed to initialize CURL!\n");
-        free(url);
-        return NULL;
-    }
-
-    // char* encoded_curl = curl_easy_escape(curl, url, 0);
 
     char* cookies = curl_format_cookie("session-token", token);
     if (cookies == NULL) {
         curl_easy_cleanup(curl);
+        free(encoded_identifier);
+        // free(encoded_fileToUse);
         free(url);
         return NULL;
     }
 
-    printf("URL: %s\n", url);
+    // printf("URL: %s\n", url);
     
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_COOKIELIST, "ALL");
@@ -153,6 +154,8 @@ int control_machine(char* identifier, char* action, const char* token, char* fil
 
     CURLcode res = curl_easy_perform(curl);
 
+    free(encoded_identifier);
+    // free(encoded_fileToUse);
     curl_easy_cleanup(curl);
 
     return res == CURLE_OK;
