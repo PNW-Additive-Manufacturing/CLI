@@ -6,23 +6,33 @@
 
 char* readAccessToken()
 {
+    const char *name = "PNW3dAccessToken";
+    const char *env_p = getenv(name);
+    char* accessToken;
     FILE* accessTokenFile = fopen(".accessToken", "r");
-    if (accessTokenFile == NULL)
+
+    if(env_p)
+    {
+        accessToken = env_p;
+    }
+    else if (accessTokenFile == NULL)
     {
         fprintf(stderr, "You are not logged in!\n");
         exit(1);
     }
+    else
+    {
+        fseek(accessTokenFile, 0, SEEK_END);
+        long fileSize = ftell(accessTokenFile); // Cursor position
+        fseek(accessTokenFile, 0, SEEK_SET); 
 
-    fseek(accessTokenFile, 0, SEEK_END);
-    long fileSize = ftell(accessTokenFile); // Cursor position
-    fseek(accessTokenFile, 0, SEEK_SET); 
+        accessToken = (char *)malloc((fileSize + 1) * sizeof(char)); 
 
-    char* accessToken = (char *)malloc((fileSize + 1) * sizeof(char)); 
+        size_t bytesRead = fread(accessToken, sizeof(char), fileSize, accessTokenFile);
+        accessToken[bytesRead] = '\0';
 
-    size_t bytesRead = fread(accessToken, sizeof(char), fileSize, accessTokenFile);
-    accessToken[bytesRead] = '\0';
-
-    fclose(accessTokenFile);
+        fclose(accessTokenFile);
+    }
 
     return accessToken;
 }
@@ -72,7 +82,7 @@ void login()
             storeAccessToken(token);
 
             printf("\nYou have been successfully logged in!\n");
-            break;
+            exit(1);
         }
     }
 }
